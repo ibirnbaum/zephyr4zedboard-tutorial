@@ -10,6 +10,19 @@ Afterwards, u-boot will be built as the 2nd stage boot loader, which will
 run after the FSBL has completed. U-boot will load and execute the Zephyr binary
 (ELF format) stored on the SD card alongside the FSBL and u-boot.
 
+This tutorial was last updated on September 22, 2024.
+
+**NOTICE:** The Zedboard board definition for Zephyr this tutorial refers to,
+provided at [this forked Zephyr repository](https://github.com/ibirnbaum/zephyr)
+on the 'zedboard' branch, is not yet based on the hardware model version 2 (HWMv2)
+introduced with the release of Zephyr 3.7. As the HWMv2 is backwards compatible,
+it should still be possible to merge the Zedboard definition as it currently is
+into a current Zephyr codebase. From my point of view, a good time to update
+the definition and eventually file a PR for it is once PR #64996 is approved.
+This will eliminate the need for an explicit virtual=physical MMU mapping for
+the SLCR register space, which is at the time being still required by the GEM
+Ethernet driver.
+
 ## Prerequisites
 
 A FAT-formatted SD card is required as boot media.
@@ -61,6 +74,22 @@ the following steps in order to select the Zedboard board definition:
 Once the board selection has been confirmed, a summary of the project to be created will be displayed.
 Click the 'Finish' button in order to create the new project. Vivado will then transition to the
 'Project Manager' view.
+
+**NOTICE:** At least one version of Vivado exists, 2023-ish, which provides a faulty board
+definition for the Zedboard, containing a wrong frequency for the on-board oscillator which drives
+the Processor System. Zedboards always come with a 33 1/3 MHz crystal, the faulty board definition
+will set this value to 50 MHz. Therefore, Vivado will calculate clock divisor values that would
+generate correct clocks if the oscillator's frequency actually was 50 MHz, but that are way off
+when applied to the 33 MHz oscillator that is actually fitted.
+
+**I strongly suggest double-checking this value.** To do so, access the 'Basic Clocking' tab as
+described in section 'Modifying the I/O mapping and clocking configuration' and make sure that
+the 'Input Frequency (MHz)' value is 33 1/3 MHz as shown in the first screenshot of that section.
+If you encounter the faulty value, set it to the right value, make sure that all values in the
+column 'Requested Frequency' still match those that are assumed in this tutorial and that are
+listed in the section 'Modifying the I/O mapping and clocking configuration', and make sure that
+the values in the 'Actual Frequency' column match the requested values, i.e. that correct divisors
+have been calculated by Vivado.
 
 ### Setting up the block design
 
@@ -399,6 +428,11 @@ modified or a new u-boot binary with a modified configuration is built, this fil
 will have to be re-built. As long as none of these items are modified, it is possible
 to just replace the zephyr.elf file on the SD card whenever Zephyr is re-built.
 
+**NOTICE:** As of the 2024.x releases of the formerly Xilinx, now AMD development tools,
+the version of Vitis this tutorial refers to is now called 'Vitis classic'. In any
+release older than 2024.x, there is no other flavor of Vitis to confuse the tool we
+want with.
+
 ### Setting up the Vitis project
 
 ********************************
@@ -577,6 +611,42 @@ should now appear. If the automatic boot sequence is not interrupt, u-boot will
 boot straight into Zephyr.
 
 ![Zedboard: Zephyr booting](/img/31_putty.png "Zephyr booting")
+
+## Troubleshooting
+
+### Onboard Ethernet PHY is not detected, error message "gem0 PHY detection failed" is shown
+
+******************
+
+This can happen either in autoscan mode or with a fixed MDIO address specified in
+the device tree. u-boot may report the same issue.
+
+Open your Vivado project, open your block design and double-click the ZYNQ7 Processing
+System block. In the 'Page Navigator' list, select the 'Peripheral I/O Pins'. Expand
+the 'Ethernet 0' node, which will then show an 'MDIO' child node. This node must be
+checked. Scroll the I/O pin assignment view all the way to the right and make sure that
+in the line belonging to the 'MDIO' child node, the highlighted I/O pin assignment is
+'MDIO', corresponding with MIO pins 52 and 53. **If the highlighted I/O assignment is 'EMIO', the MDIO interface between the Zynq and the on-board Marvell PHY will not work**, thus resulting in the "PHY detection failed"
+error message.
+
+![Vivado: MDIO pin assignment](/img/32_troubleshooting_phy.png "correct MDIO I/O pin assignment")
+
+### u-boot's bootelf command fails silently, Zephyr doesn't boot, u-boot returns to shell
+
+******************
+
+This appears to be tied to certain u-boot-xlnx versions, I hope that I'll eventually
+get around to determining the cause of this problem. A possible workaround, aside from
+updating or downgrading u-boot-xlnx, is to build a .bin file in addition to the .elf
+file and to boot this file instead by changing the boot command in the u-boot environment
+to:
+
+```fatload mmc 0 0x00100000 zephyr.bin;go 0x00100000```
+
+Notice that in this case, as no section-wise in-memory relocation of the data from the
+binary is performed as is the case with the bootelf command, the memory location the
+binary is loaded to using the fatload command must match the RAM base address from the
+device tree.
 
 ## Further documentation
 
