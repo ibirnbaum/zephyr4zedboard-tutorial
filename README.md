@@ -651,4 +651,4 @@ device tree.
 ## Further documentation
 
 [Avnet Zedboard product website](https://www.avnet.com/wps/portal/us/products/avnet-boards/avnet-board-families/zedboard/)
-[Xilinx Zynq-7000 All Programmable SoC Technical Reference Manual ](https://docs.xilinx.com/v/u/en-US/ug585-Zynq-7000-TRM)
+[Xilinx Zynq-7000 All Programmable SoC Technical Reference Manual ](https://docs.amd.com/r/en-US/ug585-zynq-7000-SoC-TRM)
