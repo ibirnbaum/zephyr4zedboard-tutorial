@@ -300,7 +300,7 @@ therefore, click 'Cancel' in order to close this dialog box.
 
 Open the menu 'File', select 'Export' followed by 'Export Hardware...':
 
-![Vivado: Export Hardware](/img/18_hdl_wrapper.png "Vivado Block Design: Export Hardware")
+![Vivado: Export Hardware](/img/19_export_hardware.png "Vivado Block Design: Export Hardware")
 
 The 'Export Hardware Platform' wizard dialog will appear. Click 'Next' to move on from the
 introductory text to the 'Output' options choice. Select the option 'Include bitstream', then
